@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student Attendance Checker</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: auto;
+        }
+
+        header {
+            background: #173d67;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .card {
+            background: white;
+            padding: 18px;
+            margin-top: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #ddd;
+        }
+
+        h2 {
+            color: #173d67;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            margin: 7px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 12px 16px;
+            background: #173d67;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            margin: 5px 2px;
+            cursor: pointer;
+        }
+
+        .green {
+            background: #18834c;
+        }
+
+        .red {
+            background: #c0392b;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        th {
+            background: #173d67;
+            color: white;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        .message {
+            text-align: center;
+            font-weight: bold;
+            color: green;
+        }
+
+        .stats {
+            display: flex;
+            gap: 10px;
+        }
+
+        .stat {
+            flex: 1;
+            background: #e7f0fa;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>STUDENT ATTENDANCE CHECKER</h1>
+        <p>Student Attendance Monitoring System</p>
+    </header>
+
+    <!-- DASHBOARD -->
+
+    <div class="card">
+
+        <h2>Attendance Dashboard</h2>
+
+        <div class="stats">
+
+            <div class="stat">
+                <h2 id="totalStudents">0</h2>
+                <p>Total Records</p>
+            </div>
+
+            <div class="stat">
+                <h2 id="totalPresent">0</h2>
+                <p>Present Today</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- STUDENT INFORMATION -->
+
+    <div class="card">
+
+        <h2>Student Information</h2>
+
+        <input
+            type="text"
+            id="studentID"
+            placeholder="Enter Student ID">
+
+        <input
+            type="text"
+            id="studentName"
+            placeholder="Enter Student Name">
+
+        <button class="green" onclick="timeIn()">
+            Time In
+        </button>
+
+        <p id="message" class="message"></p>
+
+    </div>
+
+    <!-- ATTENDANCE RECORDS -->
+
+    <div class="card">
+
+        <h2>Attendance Records</h2>
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody id="attendanceList"></tbody>
+
+            </table>
+
+        </div>
+
+        <br>
+
+        <button onclick="downloadCSV()">
+            Download Attendance
+        </button>
+
+        <button class="red" onclick="clearRecords()">
+            Clear Records
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+
+// LOAD SAVED RECORDS
+
+let records = JSON.parse(
+    localStorage.getItem("attendanceRecords") || "[]"
+);
+
+
+// GET CURRENT DATE
+
+function getDate() {
+
+    return new Date().toLocaleDateString();
+
+}
+
+
+// TIME IN FUNCTION
+
+function timeIn() {
+
+    let id = document.getElementById("studentID")
+        .value.trim();
+
+    let name = document.getElementById("studentName")
+        .value.trim();
+
+    if (id === "" || name === "") {
+
+        alert("Please enter Student ID and Name!");
+        return;
+
+    }
+
+    let now = new Date();
+
+    let date = now.toLocaleDateString();
+
+    let time = now.toLocaleTimeString();
+
+    // CHECK DUPLICATE ATTENDANCE
+
+    let alreadyPresent = records.some(student =>
+        student.id === id &&
+        student.date === date
+    );
+
+    if (alreadyPresent) {
+
+        document.getElementById("message")
+            .textContent = name + " is already present today!";
+
+        return;
+
+    }
+
+    // SAVE ATTENDANCE
+
+    records.push({
+
+        id: id,
+        name: name,
+        date: date,
+        time: time,
+        status: "Present"
+
+    });
+
+    localStorage.setItem(
+        "attendanceRecords",
+        JSON.stringify(records)
+    );
+
+    displayRecords();
+
+    document.getElementById("message")
+        .textContent = "Attendance recorded for " + name + "!";
+
+    document.getElementById("studentID").value = "";
+
+    document.getElementById("studentName").value = "";
+
+}
+
+
+// DISPLAY RECORDS
+
+function displayRecords() {
+
+    let table = document.getElementById("attendanceList");
+
+    table.innerHTML = "";
+
+    records.forEach(student => {
+
+        let row = document.createElement("tr");
+
+        [
+            student.id,
+            student.name,
+            student.date,
+            student.time,
+            student.status
+        ].forEach(value => {
+
+            let cell = document.createElement("td");
+
+            cell.textContent = value;
+
+            row.appendChild(cell);
+
+        });
+
+        table.appendChild(row);
+
+    });
+
+    document.getElementById("totalStudents")
+        .textContent = records.length;
+
+    document.getElementById("totalPresent")
+        .textContent = records.filter(student =>
+            student.date === getDate()
+        ).length;
+
+}
+
+
+// DOWNLOAD CSV
+
+function downloadCSV() {
+
+    let csv = "Student ID,Name,Date,Time,Status\n";
+
+    records.forEach(student => {
+
+        let row = [
+            student.id,
+            student.name,
+            student.date,
+            student.time,
+            student.status
+        ].map(value =>
+            '"' + String(value).replace(/"/g, '""') + '"'
+        );
+
+        csv += row.join(",") + "\n";
+
+    });
+
+    let blob = new Blob([csv], {
+        type: "text/csv;charset=utf-8;"
+    });
+
+    let url = URL.createObjectURL(blob);
+
+    let link = document.createElement("a");
+
+    link.href = url;
+
+    link.download = "Student_Attendance.csv";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+}
+
+
+// CLEAR RECORDS
+
+function clearRecords() {
+
+    if (confirm("Delete all attendance records?")) {
+
+        records = [];
+
+        localStorage.setItem(
+            "attendanceRecords",
+            JSON.stringify(records)
+        );
+
+        displayRecords();
+
+        document.getElementById("message")
+            .textContent = "All records cleared.";
+
+    }
+
+}
+
+
+// INITIAL DISPLAY
+
+displayRecords();
+
+</script>
+
+</body>
+</html>
